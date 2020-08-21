@@ -50,6 +50,7 @@ public class HelloOctaneSdk {
             reader.disconnect();
 
             System.out.println("Done");
+            s.close();
         } catch (OctaneSdkException ex) {
             System.out.println(ex.getMessage());
         } catch (Exception ex) {

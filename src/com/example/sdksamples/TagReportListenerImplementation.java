@@ -6,11 +6,14 @@ import com.impinj.octane.Tag;
 import com.impinj.octane.TagReport;
 import com.impinj.octane.TagReportListener;
 import java.io.BufferedReader;
+import java.io.OutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Calendar;
 
@@ -25,30 +28,40 @@ public class TagReportListenerImplementation implements TagReportListener {
         for (Tag t : tags) {
         	String epc = t.getEpc().toString();
             System.out.print(" EPC: " + epc);
+
             
             try {
-                String rfid = "RFID1";
                 Date date = Calendar.getInstance().getTime();
                 long timeMilli = date.getTime();
+                
+                
+                epc = epc.replaceAll(" ", "");
+             
 
-                URL url = new URL("http://localhost/rfid/" + epc + "/" + timeMilli);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Accept", "application/json");
+                URL url = new URL("http://localhost:8000/data/" + epc + "/" + timeMilli);
+                URLConnection con = url.openConnection();
+                HttpURLConnection http = (HttpURLConnection)con;
+                http.setRequestMethod("POST"); // PUT is another valid option
+                http.setDoOutput(true);
+                
+                byte[] out = "{\"userid\":\"?\",\"timemilli\":\"?\"}" .getBytes(StandardCharsets.UTF_8);
+                int length = out.length;
 
-                if (conn.getResponseCode() != 200) {
-                    throw new RuntimeException("Failed : HTTP error code : "
-                            + conn.getResponseCode());
+                http.setFixedLengthStreamingMode(length);
+                http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                http.connect();
+                try(OutputStream os = http.getOutputStream()) {
+                    os.write(out);
                 }
 
+
                 BufferedReader br = new BufferedReader(new InputStreamReader(
-                    (conn.getInputStream())));
+                    (con.getInputStream())));
                 String output;
                 System.out.println("Output from Server .... \n");
                 while ((output = br.readLine()) != null) {
                     System.out.println(output);
                 }
-                conn.disconnect();
               } catch (MalformedURLException e) {
                 e.printStackTrace();
               } catch (IOException e) {
